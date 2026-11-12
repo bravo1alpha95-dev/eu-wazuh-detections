@@ -1,0 +1,123 @@
+<!--
+  EmpowerU LLC — eu-wazuh-detections
+  Custom rule IDs: 100002, 100010–100013, 100020–100021 (range 100000+).
+
+  IMPORTANT: These rules have NOT been tested with wazuh-logtest against a
+  live Wazuh manager. Parent rule IDs (530, 550, 5501, 5503, 5710, 5715)
+  come from default Wazuh rule sets and can vary by manager version.
+  Confirm those IDs on your manager before deploying. Tune thresholds to
+  your baseline. Default Wazuh already ships some related SSH/PAM rules;
+  disable or raise levels here if you see duplicate alerts.
+
+  Licensed under the Apache License, Version 2.0.
+-->
+<group name="local,empoweru,eu-ec-detect,">
+
+  <!-- Derived from unexpected-listener checks in the community collector.
+       Process-start parent (default 530) is an approximation: Wazuh flags the
+       process, not a confirmed new listening socket. Use the host
+       anomaly-checks.sh baseline as well. -->
+  <rule id="100002" level="12">
+    <if_sid>530</if_sid>
+    <match>nc |ncat |socat |python -m http|busybox</match>
+    <description>eu-ec-detect: unexpected process associated with a network listener (possible rogue or backdoor)</description>
+    <mitre>
+      <id>T1571</id>
+    </mitre>
+    <group>eu_unexpected_listener,</group>
+  </rule>
+
+  <!-- Multiple failed authentications from one source. Requires frequency.
+       Parent 5501 is the default PAM/syslog failed-login rule in common
+       Wazuh versions — confirm on your manager. -->
+  <rule id="100010" level="10" frequency="8" timeframe="120">
+    <if_matched_sid>5501</if_matched_sid>
+    <same_source_ip />
+    <description>eu-ec-detect: multiple failed logins from the same source IP (PAM/syslog)</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>eu_auth_fail_burst,</group>
+  </rule>
+
+  <!-- SSH-specific companion to 100010, using the default sshd failure SID. -->
+  <rule id="100016" level="10" frequency="8" timeframe="120">
+    <if_matched_sid>5710</if_matched_sid>
+    <same_source_ip />
+    <description>eu-ec-detect: multiple failed SSH logins from the same source IP</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>eu_auth_fail_burst,</group>
+  </rule>
+
+  <!-- Success after a burst of failures. Correlation against 100010. -->
+  <rule id="100011" level="12" timeframe="120">
+    <if_sid>5503</if_sid>
+    <if_matched_sid>100010</if_matched_sid>
+    <same_source_ip />
+    <description>eu-ec-detect: successful login after multiple failures from the same source (possible credential stuffing or brute-force success)</description>
+    <mitre>
+      <id>T1110</id>
+      <id>T1078</id>
+    </mitre>
+    <group>eu_auth_success_after_fail,</group>
+  </rule>
+
+  <rule id="100017" level="12" timeframe="120">
+    <if_sid>5715</if_sid>
+    <if_matched_sid>100016</if_matched_sid>
+    <same_source_ip />
+    <description>eu-ec-detect: successful SSH login after multiple failures from the same source</description>
+    <mitre>
+      <id>T1110</id>
+      <id>T1078</id>
+    </mitre>
+    <group>eu_auth_success_after_fail,</group>
+  </rule>
+
+  <!-- Baseline deviation, not a specific ATT&CK technique. Tune the window. -->
+  <rule id="100012" level="8">
+    <if_sid>5503</if_sid>
+    <time>00:00-05:00</time>
+    <description>eu-ec-detect: successful login during unusual hours (00:00-05:00, PAM/syslog)</description>
+    <group>eu_offhours_login,</group>
+  </rule>
+
+  <rule id="100018" level="8">
+    <if_sid>5715</if_sid>
+    <time>00:00-05:00</time>
+    <description>eu-ec-detect: successful SSH login during unusual hours (00:00-05:00)</description>
+    <group>eu_offhours_login,</group>
+  </rule>
+
+  <!-- Root SSH success. T1078 is accurate for use of the root account. -->
+  <rule id="100013" level="10">
+    <if_sid>5715</if_sid>
+    <user>root</user>
+    <description>eu-ec-detect: successful SSH login as root</description>
+    <mitre>
+      <id>T1078</id>
+    </mitre>
+    <group>eu_root_ssh,</group>
+  </rule>
+
+  <!-- FIM on critical binary paths. No MITRE ID: a path change is not, by
+       itself, a clearly single ATT&CK technique. Parent 550 is the default
+       syscheck/FIM "integrity checksum changed" rule in common versions. -->
+  <rule id="100020" level="12">
+    <if_sid>550</if_sid>
+    <match>/usr/bin/|/usr/sbin/|/bin/|/sbin/</match>
+    <description>eu-ec-detect: critical binary path modified (file integrity)</description>
+    <group>eu_fim_critical,</group>
+  </rule>
+
+  <!-- FIM on access-policy files the collector also reviews. -->
+  <rule id="100021" level="12">
+    <if_sid>550</if_sid>
+    <match>/etc/ssh/sshd_config|/etc/sudoers|/etc/sudoers.d/</match>
+    <description>eu-ec-detect: SSH or sudo policy file modified (file integrity)</description>
+    <group>eu_fim_policy,</group>
+  </rule>
+
+</group>
