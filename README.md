@@ -4,9 +4,11 @@ Wazuh custom rules, optional decoders, and a **starter** dashboard derived from 
 
 **Defensive only. Owned systems only.** This pack does not include offensive detections, exploit content, or targeting of third-party systems.
 
-## Not tested on a live manager
+## Tested with wazuh-logtest on Wazuh 4.14.10
 
-`wazuh-logtest` was not available when this pack was published, and the rules have **not** been tested against a live Wazuh manager. Parent rule IDs come from default Wazuh rule sets and can vary by version. Validate every rule with `wazuh-logtest` on your manager, and tune thresholds, hours, and match lists to your baseline, before you rely on the alerts.
+Custom rules were loaded into the official `wazuh/wazuh-manager:4.14.10` container and exercised with `wazuh-logtest` and the synthetic samples in [tests/samples/](tests/samples/). Nine of eleven rule IDs fired as the leaf alert with the expected parents. File-integrity rules 100020 and 100021 **loaded** but could not be fired through logtest (the FIM plugin decoder is not invoked). The starter dashboard is still untested. Details, parent-SID corrections (PAM 5501/5503 were swapped in the first draft), and leftover gaps are in [docs/LOGTEST.md](docs/LOGTEST.md).
+
+Parent rule IDs can still vary by version. Re-run `wazuh-logtest` on **your** manager, and tune thresholds, hours, and match lists to your baseline, before you rely on the alerts. The `<time>` window uses the manager's local clock.
 
 The dashboard export is a starter. It is untested and may need adjustments for your Wazuh and OpenSearch Dashboards versions. See [dashboards/README.md](dashboards/README.md).
 
@@ -44,7 +46,7 @@ See [docs/RULE-MAP.md](docs/RULE-MAP.md) for parent SIDs, rationale, and what wa
 1. Back up the manager configuration and take a snapshot.
 2. Copy `rules/eu_ec_detect_rules.xml` to the manager custom-rules directory (commonly `/var/ossec/etc/rules/` on a Wazuh manager). Set ownership and mode to match the other rule files.
 3. Optionally copy `decoders/eu_ec_detect_decoders.xml` to the custom-decoders directory if you will ingest collector JSON.
-4. On the manager, run `wazuh-logtest` against representative log lines for your Wazuh version. Confirm parent SIDs (`530`, `550`, `5501`, `5503`, `5710`, `5715`) still mean what this pack assumes.
+4. On the manager, run `wazuh-logtest` against the samples in `tests/samples/` (and your own logs) for your Wazuh version. Confirm parent SIDs still mean what [docs/RULE-MAP.md](docs/RULE-MAP.md) assumes. On 4.14.10: 5501 is PAM **success**, 5503 is PAM **failure**; SSH "Failed password" is 5760.
 5. Restart or reload the manager only after that review, and only on a system you own, under your own change control.
 
 The [eu-monitor-installer](https://github.com/bravo1alpha95-dev/eu-monitor-installer) Ansible role can perform the copy in check mode (`--check`) first.
@@ -55,12 +57,14 @@ Do not paste unreviewed production alerts into public issues.
 
 ```bash
 python3 tests/test_xml_wellformed.py
+# After copying rules onto a manager you operate (see tests/samples/README.md):
+#   cat tests/samples/100013-ssh-root-success.log | /var/ossec/bin/wazuh-logtest
 ```
 
-GitHub Actions runs the same well-formedness check, plus a uniqueness and ID-range check, on every push and pull request.
+GitHub Actions runs the well-formedness, uniqueness, and ID-range checks on every push and pull request. Those checks do not replace `wazuh-logtest`.
 
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE). Copyright 2026 EmpowerU LLC.
 
-Vulnerability reports: see [SECURITY.md](SECURITY.md) and `[CONTACT EMAIL]`.
+Vulnerability reports: see [SECURITY.md](SECURITY.md) and bravo1alpha95@gmail.com.
