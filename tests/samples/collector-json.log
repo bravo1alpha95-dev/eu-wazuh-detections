@@ -1,0 +1,1 @@
+{"timestamp": "2026-11-13T02:15:01-05:00", "host": "testhost", "user": "ops", "role": "ops", "report": "x.txt", "users_with_shells": 2, "listening_sockets": 2, "notes": "Read-only collection."}

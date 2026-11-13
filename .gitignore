@@ -5,3 +5,7 @@ __pycache__/
 *.log
 .idea/
 .DS_Store
+
+# Synthetic wazuh-logtest inputs (not runtime logs)
+!tests/samples/*.log
+!tests/samples/**/*.log

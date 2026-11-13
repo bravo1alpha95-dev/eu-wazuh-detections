@@ -1,10 +1,10 @@
 # Security Considerations — eu-wazuh-detections
 
-Defensive Wazuh rules for **systems you own**. This pack has not been tested with `wazuh-logtest` against a live manager.
+Defensive Wazuh rules for **systems you own**. Rule IDs 100002, 100010–100013, and 100016–100018 were verified with `wazuh-logtest` against `wazuh/wazuh-manager:4.14.10`. File-integrity rules 100020 and 100021 loaded but were not fired through logtest. See [docs/LOGTEST.md](docs/LOGTEST.md).
 
 ## Reporting vulnerabilities
 
-Please report security issues privately to **[CONTACT EMAIL]**. Do not open a public issue for a vulnerability, and do not attach production alerts, secrets, or personally identifiable information.
+Please report security issues privately to **bravo1alpha95@gmail.com**. Do not open a public issue for a vulnerability, and do not attach production alerts, secrets, or personally identifiable information.
 
 ## Operator responsibilities
 

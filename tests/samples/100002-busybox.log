@@ -1,0 +1,1 @@
+ossec: output: 'ps aux': root 1234 0.0 0.0 busybox nc -l -p 4444

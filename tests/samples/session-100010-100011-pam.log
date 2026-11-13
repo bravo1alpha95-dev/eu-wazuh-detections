@@ -1,0 +1,9 @@
+Nov 13 02:15:01 testhost sshd[1201]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=203.0.113.10  user=alice
+Nov 13 02:15:02 testhost sshd[1202]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=203.0.113.10  user=alice
+Nov 13 02:15:03 testhost sshd[1203]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=203.0.113.10  user=alice
+Nov 13 02:15:04 testhost sshd[1204]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=203.0.113.10  user=alice
+Nov 13 02:15:05 testhost sshd[1205]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=203.0.113.10  user=alice
+Nov 13 02:15:06 testhost sshd[1206]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=203.0.113.10  user=alice
+Nov 13 02:15:07 testhost sshd[1207]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=203.0.113.10  user=alice
+Nov 13 02:15:08 testhost sshd[1208]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=203.0.113.10  user=alice
+Nov 13 02:16:01 testhost sshd[1299]: pam_unix(sshd:session): session opened for user alice by (uid=0)

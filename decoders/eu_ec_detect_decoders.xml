@@ -10,8 +10,10 @@
   object (it starts with {"timestamp":). It does not remap standard Wazuh
   fields. Field extraction can be added after validation with wazuh-logtest.
 
-  These decoders have NOT been tested with wazuh-logtest against a live
-  manager. Licensed under the Apache License, Version 2.0.
+  On wazuh/wazuh-manager:4.14.10, wazuh-logtest selected the built-in json
+  decoder for collector summaries (fields were extracted). This optional
+  decoder was not the selected name. Licensed under the Apache License,
+  Version 2.0.
 -->
 <decoder name="eu-ec-collect-json">
   <prematch>^{"timestamp":</prematch>
