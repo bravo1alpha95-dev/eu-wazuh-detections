@@ -1,0 +1,73 @@
+# EmpowerU Wazuh lab — manager + agent only (no indexer or dashboard).
+# Wazuh 4.14.10. Used to validate FIM rules 100020 and 100021.
+#
+# From this directory:
+#   docker compose up -d
+#   (use "sudo docker compose" if your user is not in the docker group)
+# Stop:   docker compose down          # leaves volumes
+# Wipe:   docker compose down -v       # also deletes lab data
+#
+# This is a lab. Authd accepts enrollments without a password, and
+# ports 1514/1515/55000 are published on the Docker host. Do not expose
+# those ports to the internet.
+
+name: wazuh-lab
+
+services:
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.14.10
+    container_name: wazuh-lab-manager
+    hostname: wazuh-lab-manager
+    restart: unless-stopped
+    ports:
+      - "1514:1514"
+      - "1515:1515"
+      - "55000:55000"
+    volumes:
+      - manager-logs:/var/ossec/logs
+      - manager-etc:/var/ossec/etc
+      - ./manager/agent.conf:/var/ossec/etc/shared/default/agent.conf
+      - ../rules/eu_ec_detect_rules.xml:/var/ossec/etc/rules/eu_ec_detect_rules.xml:ro
+      - ../decoders/eu_ec_detect_decoders.xml:/var/ossec/etc/decoders/eu_ec_detect_decoders.xml:ro
+    environment:
+      - TZ=America/New_York
+    networks:
+      - wazuh-lab
+
+  wazuh-agent:
+    image: wazuh/wazuh-agent:4.14.10
+    container_name: wazuh-lab-agent
+    hostname: wazuh-lab-agent
+    restart: unless-stopped
+    depends_on:
+      - wazuh-manager
+    # wazuh/wazuh-agent:4.14.10 writes WAZUH_MANAGER_SERVER (not WAZUH_MANAGER)
+    # into ossec.conf. On a typical Docker Engine, the service hostname
+    # wazuh-lab-manager resolves via Docker DNS and containers can talk
+    # directly. Some hosts (including Docker Engine with iptables disabled,
+    # and some Docker Desktop setups) cannot; published ports on the host
+    # still work. extra_hosts points the hostname at the host gateway so
+    # the agent uses those published ports. On a normal install this is
+    # also valid, as long as 1514 and 1515 are published as below.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "wazuh-lab-manager:host-gateway"
+    environment:
+      - TZ=America/New_York
+      - WAZUH_MANAGER=wazuh-lab-manager
+      - WAZUH_MANAGER_SERVER=wazuh-lab-manager
+      - WAZUH_MANAGER_PORT=1514
+      - WAZUH_REGISTRATION_SERVER=wazuh-lab-manager
+      - WAZUH_REGISTRATION_PORT=1515
+      - WAZUH_AGENT_NAME=wazuh-lab-agent
+    networks:
+      - wazuh-lab
+
+volumes:
+  manager-logs:
+  manager-etc:
+
+networks:
+  wazuh-lab:
+    name: wazuh-lab
+    driver: bridge

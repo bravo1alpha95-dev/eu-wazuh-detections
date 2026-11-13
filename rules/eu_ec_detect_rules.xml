@@ -129,8 +129,14 @@
   <!-- FIM on critical binary paths. No MITRE ID: a path change is not, by
        itself, a clearly single ATT&CK technique. Parent 550 is the default
        syscheck/FIM "integrity checksum changed" rule. wazuh-logtest on
-       4.14.10 does not invoke the FIM plugin decoder, so these two rules
-       were checked for load only, not for a fired leaf ID. -->
+       4.14.10 does not invoke the FIM plugin decoder, so logtest can only
+       confirm these rules load. They were fired as leaf alerts on a live
+       4.14.10 manager + agent on 2026-11-13 (America/New_York): 100020 on
+       a realtime mtime change to /usr/bin/ls, 100021 on a realtime content
+       change to /etc/ssh/sshd_config. full_log includes the path
+       (File '/usr/bin/ls' modified), so <match> is sufficient. A newly
+       created file is default 554, not 550, and does not match these
+       rules. See docs/SETUP-WAZUH-LAB.md. -->
   <rule id="100020" level="12">
     <if_sid>550</if_sid>
     <match>/usr/bin/|/usr/sbin/|/bin/|/sbin/</match>

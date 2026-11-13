@@ -4,9 +4,9 @@ Wazuh custom rules, optional decoders, and a **starter** dashboard derived from 
 
 **Defensive only. Owned systems only.** This pack does not include offensive detections, exploit content, or targeting of third-party systems.
 
-## Tested with wazuh-logtest on Wazuh 4.14.10
+## Tested on Wazuh 4.14.10
 
-Custom rules were loaded into the official `wazuh/wazuh-manager:4.14.10` container and exercised with `wazuh-logtest` and the synthetic samples in [tests/samples/](tests/samples/). Nine of eleven rule IDs fired as the leaf alert with the expected parents. File-integrity rules 100020 and 100021 **loaded** but could not be fired through logtest (the FIM plugin decoder is not invoked). The starter dashboard is still untested. Details, parent-SID corrections (PAM 5501/5503 were swapped in the first draft), and leftover gaps are in [docs/LOGTEST.md](docs/LOGTEST.md).
+Custom rules were loaded into the official `wazuh/wazuh-manager:4.14.10` container and exercised with `wazuh-logtest` and the synthetic samples in [tests/samples/](tests/samples/). Nine of eleven rule IDs fired as the leaf alert with the expected parents through logtest. File-integrity rules 100020 and 100021 **loaded** in logtest (the FIM plugin decoder is not invoked there) and **fired** on a live manager + agent on 2026-11-13: 100020 on a realtime mtime change to `/usr/bin/ls`, 100021 on a realtime content change to `/etc/ssh/sshd_config`. How to repeat that lab: [docs/SETUP-WAZUH-LAB.md](docs/SETUP-WAZUH-LAB.md). The starter dashboard is still untested. Details, parent-SID corrections (PAM 5501/5503 were swapped in the first draft), and leftover gaps are in [docs/LOGTEST.md](docs/LOGTEST.md).
 
 Parent rule IDs can still vary by version. Re-run `wazuh-logtest` on **your** manager, and tune thresholds, hours, and match lists to your baseline, before you rely on the alerts. The `<time>` window uses the manager's local clock.
 
@@ -21,6 +21,8 @@ The dashboard export is a starter. It is untested and may need adjustments for y
 | [decoders/eu_ec_detect_decoders.xml](decoders/eu_ec_detect_decoders.xml) | Optional classifier for collector JSON; the rules do not depend on it |
 | [dashboards/eu-ec-detect-starter.ndjson](dashboards/eu-ec-detect-starter.ndjson) | Starter saved-object export (untested) |
 | [examples/ossec-agent-snippets.conf](examples/ossec-agent-snippets.conf) | Optional agent FIM and manager-address snippets |
+| [docs/SETUP-WAZUH-LAB.md](docs/SETUP-WAZUH-LAB.md) | Step-by-step Docker lab (manager + agent) and official single-node install notes |
+| [lab/](lab/) | Compose file and `fim-test.sh` for that Docker lab |
 
 Related: [eu-monitor-installer](https://github.com/bravo1alpha95-dev/eu-monitor-installer) can copy these rules onto a manager you operate (dry-run by default). Documentation site: [eu-security-site](https://github.com/bravo1alpha95-dev/eu-security-site).
 
