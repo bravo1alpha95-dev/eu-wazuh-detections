@@ -172,8 +172,8 @@ do_generate() {
     docker_init
     local admin_hash kib_hash
     # The password goes in on stdin (never argv, and it survives sudo).
-    admin_hash="$(cred EU_LAB_INDEXER_ADMIN_PASSWORD | hash_pw)"
-    kib_hash="$(cred EU_LAB_KIBANASERVER_PASSWORD | hash_pw)"
+    admin_hash="$(cred EU_LAB_INDEXER_ADMIN_PASSWORD | hash_pw || true)"
+    kib_hash="$(cred EU_LAB_KIBANASERVER_PASSWORD | hash_pw || true)"
     [[ -n "$admin_hash" && -n "$kib_hash" ]] || die "could not hash passwords (is $INDEXER_IMAGE pullable?)"
     cat > "$EU_LAB_GEN_DIR/internal_users.yml" <<YAML
 ---
@@ -200,7 +200,7 @@ YAML
 }
 
 hash_pw() { # password on stdin -> bcrypt hash on stdout
-  "${DC[@]}" run --rm -i --entrypoint /bin/bash "$INDEXER_IMAGE" -c \
+  "${DC[@]}" run --rm -i -e JAVA_HOME=/usr/share/wazuh-indexer/jdk --entrypoint /bin/bash "$INDEXER_IMAGE" -c \
     'IFS= read -r EU_HASH_PW; export EU_HASH_PW; /usr/share/wazuh-indexer/plugins/opensearch-security/tools/hash.sh -env EU_HASH_PW' \
     2>/dev/null | grep -E '^[$]2' | tail -n1
 }
