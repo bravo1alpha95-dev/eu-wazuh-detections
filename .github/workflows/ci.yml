@@ -18,3 +18,19 @@ jobs:
 
       - name: Well-formedness, IDs, rule map, dashboard
         run: python3 tests/test_xml_wellformed.py
+
+  sigma:
+    name: Sigma lint and conversion (Splunk, ES|QL, Lucene)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pinned sigma-cli and backends in a venv
+        run: |
+          python3 -m venv "$RUNNER_TEMP/sigma-venv"
+          "$RUNNER_TEMP/sigma-venv/bin/pip" install -r sigma/requirements.txt
+          echo "$RUNNER_TEMP/sigma-venv/bin" >> "$GITHUB_PATH"
+
+      - name: Lint and test-convert every Sigma rule
+        run: bash sigma/validate.sh

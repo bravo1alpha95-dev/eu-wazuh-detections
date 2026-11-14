@@ -23,6 +23,7 @@ The dashboard export is a starter. It is untested and may need adjustments for y
 | [examples/ossec-agent-snippets.conf](examples/ossec-agent-snippets.conf) | Optional agent FIM and manager-address snippets |
 | [docs/SETUP-WAZUH-LAB.md](docs/SETUP-WAZUH-LAB.md) | Step-by-step Docker lab (manager + agent) and official single-node install notes |
 | [lab/](lab/) | Compose file and `fim-test.sh` for that Docker lab |
+| [sigma/](sigma/README.md) | Sigma ports of every rule (experimental), with a Wazuh ID → Sigma file mapping; converts to Splunk and Elasticsearch |
 
 Related: [eu-monitor-installer](https://github.com/bravo1alpha95-dev/eu-monitor-installer) can copy these rules onto a manager you operate (dry-run by default). Documentation site: [eu-security-site](https://github.com/bravo1alpha95-dev/eu-security-site).
 
@@ -64,6 +65,8 @@ python3 tests/test_xml_wellformed.py
 ```
 
 GitHub Actions runs the well-formedness, uniqueness, and ID-range checks on every push and pull request. Those checks do not replace `wazuh-logtest`.
+
+A second job lints the [Sigma ports](sigma/README.md) with `sigma check` and test-converts each one to Splunk, ES|QL, and Lucene (`bash sigma/validate.sh`).
 
 ## License
 

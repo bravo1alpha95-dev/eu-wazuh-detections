@@ -1,0 +1,28 @@
+title: EmpowerU Base - SSH Authentication Success
+id: 195234cb-691d-4d0c-a8ea-46844cf9b6ac
+name: eu_base_ssh_auth_success
+status: experimental
+description: |
+    Base event for correlation rule 100017. Equivalent of default Wazuh rule 5715
+    (sshd authentication success, "Accepted password/publickey/... for USER from IP").
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.initial-access
+    - attack.t1078
+logsource:
+    product: linux
+    service: sshd
+detection:
+    selection:
+        message|contains|all:
+            - 'Accepted '
+            - ' for '
+            - ' from '
+    condition: selection
+falsepositives:
+    - Every legitimate SSH login
+level: informational

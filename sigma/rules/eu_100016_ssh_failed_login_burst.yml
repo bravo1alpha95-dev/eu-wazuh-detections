@@ -1,0 +1,33 @@
+title: EmpowerU 100016 - Multiple Failed SSH Logins From the Same Source
+id: 4a3eeb41-4bdc-442b-8487-de32b54be864
+name: eu_100016_ssh_failed_login_burst
+status: experimental
+description: |
+    Port of Wazuh rule 100016, a child of default rules 5712 (8 invalid-user attempts)
+    and 5763 (8 failed passwords) from the same source. Counts SSH failures from one
+    src_ip on one host within 120 seconds. One attempt against a non-existent user can
+    log both an "Invalid user" and a "Failed password" line, so this port may reach the
+    threshold sooner than Wazuh does.
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+    - https://attack.mitre.org/techniques/T1110/
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.credential-access
+    - attack.t1110
+correlation:
+    type: event_count
+    rules:
+        - eu_base_ssh_failed_auth
+    group-by:
+        - host
+        - src_ip
+    timespan: 120s
+    condition:
+        gte: 8
+falsepositives:
+    - Automation retrying a stale key or password
+    - Vulnerability scanners you operate
+level: medium

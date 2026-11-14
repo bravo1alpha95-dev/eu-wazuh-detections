@@ -1,0 +1,29 @@
+title: EmpowerU 100013 - Successful SSH Login as Root
+id: 5fb9d14f-48a4-4f4a-a853-bc4d850c6e48
+status: experimental
+description: |
+    Port of Wazuh rule 100013: SSH authentication success (Wazuh 5715) for the root
+    account, for example "Accepted publickey for root from ...".
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+    - https://attack.mitre.org/techniques/T1078/
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.initial-access
+    - attack.persistence
+    - attack.privilege-escalation
+    - attack.t1078
+logsource:
+    product: linux
+    service: sshd
+detection:
+    selection:
+        message|contains|all:
+            - 'Accepted '
+            - ' for root from '
+    condition: selection
+falsepositives:
+    - Hosts where direct root SSH is an approved practice (prefer PermitRootLogin no and sudo)
+level: medium

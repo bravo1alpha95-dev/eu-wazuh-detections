@@ -1,0 +1,30 @@
+title: EmpowerU 100012 - Successful PAM Login (Off-Hours Window Applied in SIEM)
+id: 537a2126-8179-420d-ac7f-36a06aaeb605
+status: experimental
+description: |
+    Port of Wazuh rule 100012: successful PAM login (Wazuh 5501, session opened)
+    between 00:00 and 05:00. Sigma has no time-of-day condition, so this rule matches
+    every PAM session opened. Apply the 00:00-05:00 window in your SIEM (for example
+    Splunk "| where date_hour<5" or an Elasticsearch scheduled rule filter on the hour
+    of @timestamp in your local time zone). The Wazuh rule uses the manager's local clock.
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.initial-access
+    - detection.threat-hunting
+logsource:
+    product: linux
+    service: auth
+detection:
+    selection:
+        message|contains|all:
+            - 'pam_unix('
+            - 'session opened for user'
+    condition: selection
+falsepositives:
+    - Scheduled jobs (cron) and on-call staff working at night; tune to your baseline
+    - Without the time filter described above this rule fires on every login
+level: low

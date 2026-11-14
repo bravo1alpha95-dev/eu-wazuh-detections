@@ -1,0 +1,31 @@
+title: EmpowerU 100010 - Multiple Failed Logins From the Same Source (PAM)
+id: f5d1c859-6501-4f64-84c0-2a28ca51c8c2
+name: eu_100010_pam_failed_login_burst
+status: experimental
+description: |
+    Port of Wazuh rule 100010, a child of default rule 5551 (8 PAM authentication
+    failures in 180 seconds from the same source IP). Counts PAM failures (Wazuh 5503)
+    grouped by the pam_unix rhost field and the reporting host.
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+    - https://attack.mitre.org/techniques/T1110/
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.credential-access
+    - attack.t1110
+correlation:
+    type: event_count
+    rules:
+        - eu_base_pam_auth_failure
+    group-by:
+        - host
+        - rhost
+    timespan: 180s
+    condition:
+        gte: 8
+falsepositives:
+    - Misconfigured services or scripts retrying a stale password
+    - Shared NAT or jump hosts where many users appear from one address
+level: medium

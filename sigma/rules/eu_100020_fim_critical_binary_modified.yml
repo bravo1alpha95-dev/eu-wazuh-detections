@@ -1,0 +1,29 @@
+title: EmpowerU 100020 - Critical Binary Path Modified
+id: f59c1127-4347-4e28-a617-6f621004a42f
+status: experimental
+description: |
+    Port of Wazuh rule 100020: file-integrity "modified" event (Wazuh 550, checksum
+    changed) under /usr/bin, /usr/sbin, /bin, or /sbin. Newly added files (Wazuh 554)
+    are not in scope, which is why this uses the file_change category rather than
+    file_event (creation).
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - detection.threat-hunting
+logsource:
+    category: file_change
+    product: linux
+detection:
+    selection:
+        TargetFilename|startswith:
+            - '/usr/bin/'
+            - '/usr/sbin/'
+            - '/bin/'
+            - '/sbin/'
+    condition: selection
+falsepositives:
+    - Package manager updates (apt, dnf, yum) and configuration-management runs
+level: high
