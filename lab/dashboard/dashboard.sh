@@ -246,6 +246,9 @@ do_import() {
   python3 - "$out" <<'PY'
 import json, sys
 r = json.loads(sys.argv[1])
+if "statusCode" in r:
+    print("import rejected:", r.get("statusCode"), r.get("message"))
+    sys.exit(1)
 print("success:", r.get("success"), " successCount:", r.get("successCount"))
 for e in r.get("errors", []) or []:
     print("  error:", e.get("type"), e.get("id"), json.dumps(e.get("error")))
@@ -264,7 +267,15 @@ do_verify() {
   curl_auth admin "$pw" -H 'Content-Type: application/json' \
     "https://127.0.0.1:9200/wazuh-alerts-*/_search?size=0" \
     -d "{\"query\":{\"terms\":{\"rule.id\":$ids_json}},\"aggs\":{\"ids\":{\"terms\":{\"field\":\"rule.id\",\"size\":20}}}}" |
-    python3 -c 'import json,sys; r=json.load(sys.stdin); b=r["aggregations"]["ids"]["buckets"]; [print(f"  {x[\"key\"]}: {x[\"doc_count\"]}") for x in b] or print("  none yet")'
+    python3 -c '
+import json, sys
+r = json.load(sys.stdin)
+b = r.get("aggregations", {}).get("ids", {}).get("buckets", [])
+for x in b:
+    print("  %s: %s" % (x["key"], x["doc_count"]))
+if not b:
+    print("  none yet")
+'
   echo "== Dashboard saved objects"
   curl_auth admin "$pw" "https://127.0.0.1:5601/api/saved_objects/dashboard/eu-ec-detect-starter-dashboard" |
     python3 -c '
