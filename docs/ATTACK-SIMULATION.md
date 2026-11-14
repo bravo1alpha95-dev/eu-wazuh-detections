@@ -45,7 +45,7 @@ EmpowerU has no custom rule for new users or sudo; the default Wazuh rules cover
 
 ## Results on the live lab (2026-11-14, America/New_York)
 
-Manager and agent `wazuh/wazuh-manager:4.14.10` / `wazuh/wazuh-agent:4.14.10` (VERSION.json `4.14.10`, `rc2`), with the indexer and dashboard overlay running. Full run started 11:33 AM EST; the manager's local hour was 11, so the off-hours window was closed.
+Manager and agent `wazuh/wazuh-manager:4.14.10` / `wazuh/wazuh-agent:4.14.10` (VERSION.json `4.14.10`, `rc2`), with the indexer and dashboard overlay running. Two full runs, started at 11:32 AM and 11:43 AM EST, both passed every scenario with identical results (table below). The manager's local hour was 11, so the off-hours window was closed.
 
 | Scenario | Expected | Fired | Result |
 |---|---|---|---|
@@ -57,7 +57,7 @@ Manager and agent `wazuh/wazuh-manager:4.14.10` / `wazuh/wazuh-agent:4.14.10` (V
 | pam-burst | 5503, 100010, 100011 | 5503, 100010, 100011 | PASS |
 | ssh-burst | 5710, 100016, 100017 | 5710, 100016, 100017 | PASS |
 
-EmpowerU leaf alerts seen in that run: 100002, 100010, 100011, 100013, 100016, 100017, 100020, 100021 (twice: `sshd_config` and `sudoers.d/eu-sim`). The alerts also reached the indexer and appear on the starter dashboard.
+EmpowerU leaf alerts seen in that run: 100002, 100010, 100011, 100013, 100016, 100017, 100020, 100021 (twice: `sshd_config` and `sudoers.d/eu-sim`). The alerts also reached the indexer and appear on the starter dashboard. A dry run (`./simulate/run-all.sh` without `CONFIRM`) printed every step and changed nothing.
 
 Honest notes from the runs:
 
