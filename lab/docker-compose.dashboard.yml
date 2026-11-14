@@ -1,0 +1,109 @@
+# EmpowerU Wazuh lab — OPT-IN indexer + dashboard overlay (Wazuh 4.14.10).
+#
+# Do not run this file by hand. Use the helper, which generates TLS certs
+# and random passwords first (dry-run by default):
+#
+#   cd lab
+#   ./dashboard/dashboard.sh plan               # dry run: shows what it would do
+#   CONFIRM=yes ./dashboard/dashboard.sh up     # generate secrets + start
+#   CONFIRM=yes ./dashboard/dashboard.sh import # load the starter dashboard
+#   ./dashboard/dashboard.sh verify             # read-only checks
+#
+# Every path and secret below comes from the generated, mode-600 file
+# credentials.env (passed with --env-file). Nothing secret is stored in git.
+#
+# Resources: the indexer alone wants ~2 GB RAM (1 GB Java heap). Plan for
+# ~4 GB free RAM for manager + agent + indexer + dashboard.
+#
+# Networking: like the base lab, containers reach each other through the
+# Docker host's published ports (host-gateway), which also works on hosts
+# where Docker DNS / inter-container traffic is unavailable. Port 5601
+# binds to EU_LAB_DASHBOARD_BIND (default 127.0.0.1). Port 9200 binds to
+# EU_LAB_INDEXER_BIND (default 0.0.0.0, because the manager and dashboard
+# containers reach the indexer through the host). Never expose either port
+# to the internet.
+
+services:
+  wazuh-manager:
+    # Ship alerts.json to the indexer with the manager image's bundled
+    # Filebeat, and set the Wazuh API password the dashboard uses.
+    extra_hosts:
+      - "wazuh-lab-indexer:host-gateway"
+    environment:
+      - INDEXER_URL=https://wazuh-lab-indexer:9200
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=${EU_LAB_INDEXER_ADMIN_PASSWORD:?run dashboard.sh, not compose directly}
+      - FILEBEAT_SSL_VERIFICATION_MODE=full
+      - SSL_CERTIFICATE_AUTHORITIES=/etc/ssl/eu-lab/root-ca.pem
+      - SSL_CERTIFICATE=/etc/ssl/eu-lab/manager.pem
+      - SSL_KEY=/etc/ssl/eu-lab/manager-key.pem
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=${EU_LAB_API_PASSWORD:?run dashboard.sh, not compose directly}
+    volumes:
+      - ${EU_LAB_GEN_DIR:?}/certs/root-ca.pem:/etc/ssl/eu-lab/root-ca.pem:ro
+      - ${EU_LAB_GEN_DIR:?}/certs/manager.pem:/etc/ssl/eu-lab/manager.pem:ro
+      - ${EU_LAB_GEN_DIR:?}/certs/manager-key.pem:/etc/ssl/eu-lab/manager-key.pem:ro
+
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.14.10
+    container_name: wazuh-lab-indexer
+    hostname: wazuh-lab-indexer
+    restart: unless-stopped
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+      - TZ=America/New_York
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "${EU_LAB_INDEXER_BIND:-0.0.0.0}:9200:9200"
+    volumes:
+      - indexer-data:/var/lib/wazuh-indexer
+      - ${EU_LAB_GEN_DIR:?}/certs/root-ca.pem:/usr/share/wazuh-indexer/config/certs/root-ca.pem:ro
+      - ${EU_LAB_GEN_DIR:?}/certs/indexer.pem:/usr/share/wazuh-indexer/config/certs/indexer.pem:ro
+      - ${EU_LAB_GEN_DIR:?}/certs/indexer-key.pem:/usr/share/wazuh-indexer/config/certs/indexer-key.pem:ro
+      - ${EU_LAB_GEN_DIR:?}/certs/admin.pem:/usr/share/wazuh-indexer/config/certs/admin.pem:ro
+      - ${EU_LAB_GEN_DIR:?}/certs/admin-key.pem:/usr/share/wazuh-indexer/config/certs/admin-key.pem:ro
+      - ${EU_LAB_DASHBOARD_CONFIG_DIR:?}/opensearch.yml:/usr/share/wazuh-indexer/config/opensearch.yml:ro
+      - ${EU_LAB_GEN_DIR:?}/internal_users.yml:/usr/share/wazuh-indexer/config/opensearch-security/internal_users.yml:ro
+    networks:
+      - wazuh-lab
+
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:4.14.10
+    container_name: wazuh-lab-dashboard
+    hostname: wazuh-lab-dashboard
+    restart: unless-stopped
+    depends_on:
+      - wazuh-indexer
+      - wazuh-manager
+    extra_hosts:
+      - "wazuh-lab-indexer:host-gateway"
+      - "wazuh-lab-manager:host-gateway"
+    environment:
+      - TZ=America/New_York
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=${EU_LAB_INDEXER_ADMIN_PASSWORD:?}
+      - DASHBOARD_USERNAME=kibanaserver
+      - DASHBOARD_PASSWORD=${EU_LAB_KIBANASERVER_PASSWORD:?}
+      - WAZUH_API_URL=https://wazuh-lab-manager
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=${EU_LAB_API_PASSWORD:?}
+    ports:
+      - "${EU_LAB_DASHBOARD_BIND:-127.0.0.1}:5601:5601"
+    volumes:
+      - dashboard-config:/usr/share/wazuh-dashboard/data/wazuh/config
+      - ${EU_LAB_GEN_DIR:?}/certs/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem:ro
+      - ${EU_LAB_GEN_DIR:?}/certs/dashboard.pem:/usr/share/wazuh-dashboard/certs/dashboard.pem:ro
+      - ${EU_LAB_GEN_DIR:?}/certs/dashboard-key.pem:/usr/share/wazuh-dashboard/certs/dashboard-key.pem:ro
+      - ${EU_LAB_DASHBOARD_CONFIG_DIR:?}/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
+    networks:
+      - wazuh-lab
+
+volumes:
+  indexer-data:
+  dashboard-config:

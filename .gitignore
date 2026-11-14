@@ -9,3 +9,7 @@ __pycache__/
 # Synthetic wazuh-logtest inputs (not runtime logs)
 !tests/samples/*.log
 !tests/samples/**/*.log
+
+# Lab-generated secrets and simulation reports (never commit)
+lab/dashboard/.generated/
+lab/simulate/results/
