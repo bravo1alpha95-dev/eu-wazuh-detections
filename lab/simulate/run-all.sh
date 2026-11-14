@@ -40,7 +40,7 @@ in_window=0; (( 10#$hour < 5 )) && in_window=1
 declare -A EXPECT=(
   [root-ssh]="100013"
   [listener]="100002"
-  [user-sudo]="5902 5402 100021"   # 554 (file added) only on the first run
+  [user-sudo]="5902 5402|5403 100021"   # 5403 = first sudo by that user; 554 (file added) only on the first run
   [fim]="100020 100021"
   [pam-burst]="5503 100010 100011"
   [ssh-burst]="5710 100016 100017"
@@ -125,7 +125,8 @@ while :; do
   missing="$(python3 - "$alerts" "${want[@]}" <<'PY'
 import json, sys
 seen = {a["rule_id"] for a in json.loads(sys.argv[1])}
-print(" ".join(sorted({w for w in sys.argv[2:] if w not in seen})))
+# "A|B" means either rule ID satisfies the expectation.
+print(" ".join(sorted({w for w in sys.argv[2:] if not seen.intersection(w.split("|"))})))
 PY
 )"
   [[ -z "$missing" ]] && break
@@ -156,10 +157,11 @@ allok = True
 for item in filter(None, expect.split(";")):
     name, ids = item.split("=", 1)
     ids = ids.split()
-    fired = [i for i in ids if counts.get(i)]
-    miss = [i for i in ids if not counts.get(i)]
+    hit = lambda i: any(counts.get(x) for x in i.split("|"))
+    fired = ["/".join(x for x in i.split("|") if counts.get(x)) for i in ids if hit(i)]
+    miss = [i.replace("|", " or ") for i in ids if not hit(i)]
     allok &= not miss
-    print(f"| {name} | {', '.join(ids)} | {', '.join(fired) or '-'} | {', '.join(miss) or '-'} | {'PASS' if not miss else 'FAIL'} |")
+    print(f"| {name} | {', '.join(i.replace('|', ' or ') for i in ids)} | {', '.join(fired) or '-'} | {', '.join(miss) or '-'} | {'PASS' if not miss else 'FAIL'} |")
 print("\n## All rule IDs seen from this agent during the run\n")
 print("| Rule ID | Count | Description |")
 print("|---|---|---|")
