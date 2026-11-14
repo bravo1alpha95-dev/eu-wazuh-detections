@@ -3,7 +3,7 @@
 # accepted password from the same IP. Expected: 5710 x8 -> 5712 -> 100016,
 # then 5715 -> 100017 (same source IP within 180s).
 set -euo pipefail
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 sim_gate
 ip="${EU_SIM_SSH_SRC_IP:-198.51.100.20}"

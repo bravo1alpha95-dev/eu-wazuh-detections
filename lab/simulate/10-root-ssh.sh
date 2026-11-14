@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One synthetic successful SSH login as root. Expected: 5715 -> 100013.
 set -euo pipefail
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 sim_gate
 ip="${EU_SIM_ROOT_SRC_IP:-192.0.2.30}"

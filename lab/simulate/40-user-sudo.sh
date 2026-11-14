@@ -8,7 +8,7 @@
 #     comment line (FIM 550 -> EmpowerU 100021). The file only ever holds
 #     comments, so it grants nothing.
 set -euo pipefail
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 sim_gate
 sim_banner "user-sudo: synthetic useradd/sudo lines (expect 5902, 5402) + real /etc/sudoers.d/eu-sim edit (expect 554, then 100021)"

@@ -16,7 +16,7 @@
 # Exit status: 0 if every expected rule fired, 1 if any did not, 2/3 on setup or scope errors.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 . "$HERE/lib.sh"
 umask 077
 

@@ -3,7 +3,7 @@
 # confirm the agent has the shared config that watches it
 # (lab/manager/agent.conf adds a <localfile> for /var/log/eu-sim/auth.log).
 set -euo pipefail
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 sim_gate
 sim_banner "prepare: monitored file $EU_SIM_LOG in $EU_SIM_AGENT"

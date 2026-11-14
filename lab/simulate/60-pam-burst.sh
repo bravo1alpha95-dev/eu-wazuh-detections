@@ -2,7 +2,7 @@
 # 8 synthetic PAM authentication failures from one documentation IP, then a
 # PAM session opened. Expected: 5503 x8 -> 5551 -> 100010, then 100011.
 set -euo pipefail
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 sim_gate
 sim_banner "pam-burst: 8 PAM failures from $EU_SIM_SRC_IP, then a PAM success (expect 100010, 100011)"

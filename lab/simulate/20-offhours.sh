@@ -4,7 +4,7 @@
 # uses the manager clock, not the log timestamp). Outside that window the
 # defaults 5501 and 5715 fire instead, which is the correct behavior.
 set -euo pipefail
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 sim_gate
 ip="${EU_SIM_OFFHOURS_SRC_IP:-192.0.2.40}"

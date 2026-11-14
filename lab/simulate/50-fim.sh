@@ -3,7 +3,7 @@
 #   touch /usr/bin/ls (mtime only)             -> 550 -> 100020
 #   append a comment to /etc/ssh/sshd_config  -> 550 -> 100021
 set -euo pipefail
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 sim_gate
 sim_banner "fim: touch /usr/bin/ls and add a comment to /etc/ssh/sshd_config (expect 100020, 100021)"
