@@ -1,0 +1,36 @@
+title: EmpowerU 100011 - Successful Login After Failures (PAM)
+id: 8b771154-d5f7-410b-8d69-547190dbd635
+status: experimental
+description: |
+    Port of Wazuh rule 100011: a PAM session opened (Wazuh 5501, success) within
+    180 seconds of PAM authentication failures (Wazuh 5503) on the same host. Like the
+    Wazuh rule, it does not require the same source IP, because PAM "session opened"
+    lines usually carry no rhost.
+    Difference from Wazuh: the Wazuh rule requires burst rule 100010 (8 failures) to
+    fire first. Chained Sigma correlations do not convert correctly on the Splunk and
+    Elasticsearch backends tested (pySigma 1.5), so this port fires on any failure plus
+    a success in the same 180-second window and does not enforce order. Pair it with
+    rule 100010 in your SIEM, or add a failure-count threshold, to match Wazuh.
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+    - https://attack.mitre.org/techniques/T1110/
+    - https://attack.mitre.org/techniques/T1078/
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.credential-access
+    - attack.t1110
+    - attack.initial-access
+    - attack.t1078
+correlation:
+    type: temporal
+    rules:
+        - eu_base_pam_auth_failure
+        - eu_base_pam_session_opened
+    group-by:
+        - host
+    timespan: 180s
+falsepositives:
+    - A legitimate user who mistyped their password and then logged in (common; this port is broader than the Wazuh rule)
+level: medium

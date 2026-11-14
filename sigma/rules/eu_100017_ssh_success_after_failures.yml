@@ -1,0 +1,36 @@
+title: EmpowerU 100017 - Successful SSH Login After Failures From the Same Source
+id: 99dc23ef-ed2b-41b3-bdef-fcc3ee19d4c8
+status: experimental
+description: |
+    Port of Wazuh rule 100017: an SSH authentication success (Wazuh 5715) and SSH
+    authentication failures (Wazuh 5760 / 5710) from the same source IP on the same
+    host within 180 seconds.
+    Difference from Wazuh: the Wazuh rule requires burst rule 100016 (8 failures) to
+    fire first. Chained Sigma correlations do not convert correctly on the Splunk and
+    Elasticsearch backends tested (pySigma 1.5), so this port fires on any failure plus
+    a success from that source in the window and does not enforce order. Pair it with
+    rule 100016 in your SIEM, or add a failure-count threshold, to match Wazuh.
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+    - https://attack.mitre.org/techniques/T1110/
+    - https://attack.mitre.org/techniques/T1078/
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.credential-access
+    - attack.t1110
+    - attack.initial-access
+    - attack.t1078
+correlation:
+    type: temporal
+    rules:
+        - eu_base_ssh_failed_auth
+        - eu_base_ssh_auth_success
+    group-by:
+        - host
+        - src_ip
+    timespan: 180s
+falsepositives:
+    - A legitimate user who mistyped their password and then logged in (this port is broader than the Wazuh rule)
+level: medium

@@ -1,0 +1,13 @@
+# Optional pySigma processing pipeline for the EmpowerU Sigma rules on Splunk.
+# The Linux auth/sshd rules match on the raw syslog line, which these rules call
+# "message" (the Elastic Common Schema name). Splunk keeps that line in _raw.
+# The client address field "src_ip" is renamed to "src" (CIM name, set by the
+# Splunk Add-on for Unix and Linux). Review field names for your own sourcetypes.
+name: EmpowerU Linux raw-message mapping for Splunk
+priority: 30
+transformations:
+  - id: eu_message_to_raw
+    type: field_name_mapping
+    mapping:
+      message: _raw
+      src_ip: src

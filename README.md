@@ -26,6 +26,7 @@ The dashboard export is a starter. It was tested on Wazuh dashboard 4.14.10 (Ope
 | [docs/SETUP-WAZUH-LAB.md](docs/SETUP-WAZUH-LAB.md) | Step-by-step Docker lab (manager + agent) and official single-node install notes |
 | [lab/](lab/) | Compose file and `fim-test.sh` for that Docker lab, plus the opt-in indexer + dashboard overlay (`lab/dashboard/`) |
 | [lab/simulate/](lab/simulate/) and [docs/ATTACK-SIMULATION.md](docs/ATTACK-SIMULATION.md) | Dry-run-by-default attack simulation that fires each rule on the lab agent and reports the rule IDs |
+| [sigma/](sigma/README.md) | Sigma ports of every rule (experimental), with a Wazuh ID → Sigma file mapping; converts to Splunk and Elasticsearch |
 
 Related: [eu-monitor-installer](https://github.com/bravo1alpha95-dev/eu-monitor-installer) can copy these rules onto a manager you operate (dry-run by default). Documentation site: [eu-security-site](https://github.com/bravo1alpha95-dev/eu-security-site).
 
@@ -67,6 +68,8 @@ python3 tests/test_xml_wellformed.py
 ```
 
 GitHub Actions runs the well-formedness, uniqueness, and ID-range checks on every push and pull request. Those checks do not replace `wazuh-logtest`.
+
+A second job lints the [Sigma ports](sigma/README.md) with `sigma check` and test-converts each one to Splunk, ES|QL, and Lucene (`bash sigma/validate.sh`).
 
 ## License
 

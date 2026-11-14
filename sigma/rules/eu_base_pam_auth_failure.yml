@@ -1,0 +1,28 @@
+title: EmpowerU Base - PAM Authentication Failure
+id: 91fe883d-16d1-4355-b105-5ab1c2401529
+name: eu_base_pam_auth_failure
+status: experimental
+description: |
+    Base event for correlation rule 100010. Equivalent of default Wazuh rule 5503
+    (PAM authentication failure). Note that 5503 is FAILURE and 5501 is SUCCESS on
+    Wazuh 4.14.10. Assumes the pam_unix key=value fields (rhost) are extracted.
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.credential-access
+    - attack.t1110
+logsource:
+    product: linux
+    service: auth
+detection:
+    selection:
+        message|contains|all:
+            - 'pam_unix('
+            - 'authentication failure;'
+    condition: selection
+falsepositives:
+    - Users mistyping passwords
+level: informational

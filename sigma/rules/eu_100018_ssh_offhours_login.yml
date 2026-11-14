@@ -1,0 +1,30 @@
+title: EmpowerU 100018 - Successful SSH Login (Off-Hours Window Applied in SIEM)
+id: 7f28d920-0e86-4ff7-bcd5-c111be0b20c3
+status: experimental
+description: |
+    Port of Wazuh rule 100018: successful SSH login (Wazuh 5715) between 00:00 and
+    05:00. Sigma has no time-of-day condition, so this rule matches every SSH success.
+    Apply the 00:00-05:00 window in your SIEM (for example Splunk "| where date_hour<5").
+    The Wazuh rule uses the manager's local clock.
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.initial-access
+    - detection.threat-hunting
+logsource:
+    product: linux
+    service: sshd
+detection:
+    selection:
+        message|contains|all:
+            - 'Accepted '
+            - ' for '
+            - ' from '
+    condition: selection
+falsepositives:
+    - On-call staff and scheduled automation logging in at night; tune to your baseline
+    - Without the time filter described above this rule fires on every SSH login
+level: low

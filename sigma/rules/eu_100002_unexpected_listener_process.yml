@@ -1,0 +1,37 @@
+title: EmpowerU 100002 - Unexpected Process Associated With a Network Listener
+id: 5b03fca1-5b46-4dcd-b1bc-e4eeb42c781f
+status: experimental
+description: |
+    Port of Wazuh rule 100002 (eu-wazuh-detections). Detects the start of a process
+    commonly used as an ad hoc network listener or file server: nc, ncat, socat,
+    busybox, or "python -m http" (http.server). The Wazuh rule matches these strings in
+    process-monitoring command output (parent 530); this port uses process-creation
+    events instead. It does not confirm that a listening socket was opened.
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+    - https://attack.mitre.org/techniques/T1571/
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.command-and-control
+    - attack.t1571
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection_image:
+        Image|endswith:
+            - '/nc'
+            - '/ncat'
+            - '/socat'
+            - '/busybox'
+    selection_python_http:
+        CommandLine|contains:
+            - 'python -m http'
+            - 'python3 -m http'
+    condition: 1 of selection_*
+falsepositives:
+    - Administrators using netcat, socat, or python http.server for troubleshooting or file transfer
+    - Embedded or container images where busybox provides core utilities (very noisy there; add exclusions)
+level: high

@@ -1,0 +1,27 @@
+title: EmpowerU 100021 - SSH or Sudo Policy File Modified
+id: be94b1d8-9593-49df-94c8-0126bd4fec12
+status: experimental
+description: |
+    Port of Wazuh rule 100021: file-integrity "modified" event (Wazuh 550) on
+    /etc/ssh/sshd_config, /etc/sudoers, or files under /etc/sudoers.d/. Newly added
+    files (Wazuh 554) are not in scope.
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - detection.threat-hunting
+logsource:
+    category: file_change
+    product: linux
+detection:
+    selection:
+        TargetFilename|startswith:
+            - '/etc/ssh/sshd_config'
+            - '/etc/sudoers'
+    condition: selection
+falsepositives:
+    - Approved changes through configuration management or visudo
+    - OpenSSH package updates that rewrite sshd_config
+level: high
