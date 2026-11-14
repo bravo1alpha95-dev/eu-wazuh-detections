@@ -1,0 +1,29 @@
+title: EmpowerU Base - SSH Failed Authentication
+id: fcae4a1a-d23b-4a37-8c60-5b0866d828ce
+name: eu_base_ssh_failed_auth
+status: experimental
+description: |
+    Base event for correlation rule 100016. Covers the default Wazuh SSH events that
+    feed the bursts 100016 extends: 5760 ("Failed password") and 5710 (non-existent
+    user). Assumes your parser extracts the client address into src_ip
+    (Wazuh decodes it as srcip).
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.credential-access
+    - attack.t1110
+logsource:
+    product: linux
+    service: sshd
+detection:
+    selection:
+        message|contains:
+            - 'Failed password for '
+            - 'Invalid user '
+    condition: selection
+falsepositives:
+    - Users mistyping passwords
+level: informational

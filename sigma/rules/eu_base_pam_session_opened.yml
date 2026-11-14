@@ -1,0 +1,27 @@
+title: EmpowerU Base - PAM Session Opened
+id: 5144f219-6cab-4d34-9569-9e1374041a47
+name: eu_base_pam_session_opened
+status: experimental
+description: |
+    Base event for correlation rule 100011. Equivalent of default Wazuh rule 5501
+    (PAM login session opened, a SUCCESS event on Wazuh 4.14.10).
+references:
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/rules/eu_ec_detect_rules.xml
+    - https://github.com/bravo1alpha95-dev/eu-wazuh-detections/blob/main/docs/RULE-MAP.md
+author: EmpowerU LLC
+date: 2026-11-14
+tags:
+    - attack.initial-access
+    - attack.t1078
+logsource:
+    product: linux
+    service: auth
+detection:
+    selection:
+        message|contains|all:
+            - 'pam_unix('
+            - 'session opened for user'
+    condition: selection
+falsepositives:
+    - Every legitimate login, cron job, and sudo session
+level: informational
