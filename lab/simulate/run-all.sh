@@ -40,7 +40,7 @@ in_window=0; (( 10#$hour < 5 )) && in_window=1
 declare -A EXPECT=(
   [root-ssh]="100013"
   [listener]="100002"
-  [user-sudo]="5902 5402 554 100021"
+  [user-sudo]="5902 5402 100021"   # 554 (file added) only on the first run
   [fim]="100020 100021"
   [pam-burst]="5503 100010 100011"
   [ssh-burst]="5710 100016 100017"
