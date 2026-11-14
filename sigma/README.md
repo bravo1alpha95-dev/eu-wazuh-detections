@@ -58,19 +58,21 @@ python3 -m venv .venv-sigma && . .venv-sigma/bin/activate
 pip install -r sigma/requirements.txt
 
 sigma check sigma/rules
-sigma convert -t splunk -p sigma/pipelines/splunk_linux_raw.yml sigma/rules
-sigma convert -t esql --without-pipeline sigma/rules
-# Lucene has no correlation support; -s skips the four correlation rules
-sigma convert -t lucene --without-pipeline -s sigma/rules
+python3 sigma/tests/convert_all.py --print splunk       # generic field names
+python3 sigma/tests/convert_all.py --print splunk-raw   # with pipelines/splunk_linux_raw.yml
+python3 sigma/tests/convert_all.py --print esql
+python3 sigma/tests/convert_all.py --print lucene       # Lucene has no correlations; those 4 are skipped
 ```
 
-`--without-pipeline` keeps the generic field names above; add your own pipeline for production.
+Why a script instead of plain `sigma convert sigma/rules`: pySigma 1.5.1 builds a correlation query from its base rules' conversion results, so base rules must be converted first. `sigma convert` loads files in filesystem order, which varies between machines, and fails with "Conversion result not available" when a correlation is loaded before its base rules. `convert_all.py` loads base rules first. Single non-correlation rules convert fine with `sigma convert -t splunk --without-pipeline sigma/rules/<file>.yml`.
+
+The generic field names above are used as-is; add your own pySigma pipeline for production.
 
 ## Validation
 
-`sigma/validate.sh` runs the structural test (`sigma/tests/test_sigma_pack.py`: one port per Wazuh rule, unique UUIDs, required metadata, this mapping table), `sigma check --fail-on-issues`, and converts every rule to Splunk and ES|QL, plus every non-correlation rule to Lucene, failing on anything unsupported. GitHub Actions runs it on every push and pull request.
+`sigma/validate.sh` runs the structural test (`sigma/tests/test_sigma_pack.py`: one port per Wazuh rule, unique UUIDs, required metadata, this mapping table), `sigma check --fail-on-issues`, and `sigma/tests/convert_all.py`, which converts every rule to Splunk (with and without the pipeline) and ES|QL, plus every non-correlation rule to Lucene, and fails if any rule produces no query. GitHub Actions runs it on every push and pull request.
 
-Results on 2026-11-14 (sigma-cli 3.1.0, pySigma 1.5.1, Splunk backend 2.1.0, Elasticsearch backend 2.1.1): 14 rules, 0 errors, 0 validation issues; Splunk 14/14, ES|QL 14/14, Lucene 10/10 non-correlation rules.
+Results on 2026-11-14 (sigma-cli 3.1.0, pySigma 1.5.1, Splunk backend 2.1.0, Elasticsearch backend 2.1.1): 14 rules, 0 errors, 0 validation issues; Splunk 14/14 (also 14/14 with the pipeline), ES|QL 14/14, Lucene 10/10 non-correlation rules.
 
 ## License
 
