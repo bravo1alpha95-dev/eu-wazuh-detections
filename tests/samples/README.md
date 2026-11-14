@@ -25,7 +25,7 @@ docker run -d --name eu-wazuh-logtest -e TZ=America/New_York \
 docker exec -i eu-wazuh-logtest /var/ossec/bin/wazuh-logtest < tests/samples/100013-ssh-root-success.log
 ```
 
-`<time>` rules (100012, 100018) use the **manager's local clock**, not the timestamp in the log. To exercise the 00:00–05:00 window, set `TZ` so the manager's local time falls in that range.
+`<time>` rules (100012, 100018) use the **manager's local clock**, not the timestamp in the log. To exercise the 00:00–05:00 window, the manager's local time must fall in that range. On `wazuh/wazuh-manager:4.14.10`, `-e TZ=<zone>` is enough. On older images (4.14.0, 4.13.1, 4.12.0 were checked), `TZ` does **not** affect `<time>`; copy the zone file to `/var/ossec/etc/localtime` instead. `tests/logtest/run-logtest.sh` does this for you. See [docs/VERSION-MATRIX.md](../../docs/VERSION-MATRIX.md).
 
 The FIM `.json` samples are the agent event format documented in Wazuh 4.x. On 4.14.10, `wazuh-logtest` does **not** invoke the FIM plugin decoder (`syscheck_integrity_changed`), so those samples will not produce rule 550 / 100020 / 100021 through logtest. They are included as a reference for a live syscheck event.
 
