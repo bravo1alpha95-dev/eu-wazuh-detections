@@ -67,7 +67,7 @@ python3 tests/test_xml_wellformed.py
 #   cat tests/samples/100013-ssh-root-success.log | /var/ossec/bin/wazuh-logtest
 ```
 
-GitHub Actions runs the well-formedness, uniqueness, and ID-range checks on every push and pull request. Those checks do not replace `wazuh-logtest`.
+GitHub Actions runs the well-formedness, uniqueness, and ID-range checks, `bash -n` and ShellCheck, and a **`wazuh-logtest` version matrix** on every push and pull request. The matrix runs the samples on `wazuh/wazuh-manager` 4.14.10, 4.14.0, 4.13.1, 4.12.0, 4.10.1 and 4.8.2, and all six pass 14/14. Results and two image quirks it found are in [docs/VERSION-MATRIX.md](docs/VERSION-MATRIX.md). Run one version yourself with `EU_WAZUH_VERSION=4.12.0 tests/logtest/run-logtest.sh` (needs Docker). FIM rules 100020 and 100021 cannot fire in logtest; they were verified on a live manager and agent.
 
 A second job lints the [Sigma ports](sigma/README.md) with `sigma check` and test-converts each one to Splunk, ES|QL, and Lucene (`bash sigma/validate.sh`).
 

@@ -34,3 +34,58 @@ jobs:
 
       - name: Lint and test-convert every Sigma rule
         run: bash sigma/validate.sh
+
+  shell:
+    name: Shell syntax and ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: bash -n and ShellCheck on every tracked shell script
+        run: |
+          mapfile -t files < <(git ls-files '*.sh')
+          printf '%s\n' "${files[@]}"
+          for f in "${files[@]}"; do bash -n "$f"; done
+          shellcheck --version
+          shellcheck -x "${files[@]}"
+
+  logtest:
+    # Loads the rule pack into each official manager image and checks every
+    # synthetic sample in tests/samples/ against tests/logtest/expected.tsv.
+    # Results per version: docs/VERSION-MATRIX.md.
+    name: wazuh-logtest on wazuh/wazuh-manager:${{ matrix.wazuh }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        wazuh: ["4.14.10", "4.14.0", "4.13.1", "4.12.0", "4.10.1", "4.8.2"]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Pull the manager image
+        run: docker pull "wazuh/wazuh-manager:${{ matrix.wazuh }}"
+
+      - name: Run the logtest suite
+        env:
+          EU_WAZUH_VERSION: ${{ matrix.wazuh }}
+          EU_LOGTEST_REPORT: ${{ runner.temp }}/logtest-${{ matrix.wazuh }}.tsv
+        run: bash tests/logtest/run-logtest.sh
+
+      - name: Add results to the job summary
+        if: always()
+        run: |
+          report="${{ runner.temp }}/logtest-${{ matrix.wazuh }}.tsv"
+          {
+            echo "### wazuh-logtest on wazuh/wazuh-manager:${{ matrix.wazuh }}"
+            echo
+            if [ -f "$report" ]; then
+              echo "| sample | result | rule IDs seen |"
+              echo "|---|---|---|"
+              tail -n +2 "$report" | awk -F'\t' '{print "| " $2 " | " $3 " | " $4 " |"}'
+            else
+              echo "No report (the manager did not start; see the step log)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
