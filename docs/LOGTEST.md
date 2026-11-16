@@ -39,7 +39,7 @@ On the rules as first published, `wazuh-logtest` against 4.14.10 showed:
 ## Not verified
 
 - **Optional collector JSON decoder.** The built-in `json` decoder wins for collector summaries that start with `{"timestamp":`. Fields are extracted; `eu-ec-collect-json` is not the selected decoder. The detection rules do not depend on it.
-- **Starter dashboard.** Still untested against OpenSearch Dashboards. This lab does not run a dashboard container.
+- **Starter dashboard.** Now tested on Wazuh dashboard 4.14.10 only (2026-11-14, live lab alerts; see [SETUP-WAZUH-LAB.md, step 6](SETUP-WAZUH-LAB.md#6-optional-add-the-indexer-and-dashboard)). Other dashboard versions are not tested.
 - **Wazuh 5.x** and versions other than 4.14.10. Parent SIDs should be re-checked on the manager you will run.
 
 The Wazuh manager ran only in a disposable container on this computer. Wazuh packages were not installed on the host. The container was not left as a service.
