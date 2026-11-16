@@ -46,21 +46,45 @@ class XmlPack(unittest.TestCase):
                 self.assertRegex(mid, r"^T\d{4}(\.\d{3})?$")
 
     def test_starter_dashboard_ndjson(self):
+        """Structure checks for the starter dashboard (Saved Objects ndjson).
+
+        The file was imported into Wazuh dashboard 4.14.10 (OpenSearch
+        Dashboards 2.19.6) on 2026-11-14. That import rejected the original
+        migrationVersion "8.0.0" ("belongs to a more recent version"), so this
+        test keeps every migrationVersion at or below what OSD 2.x knows, and
+        checks that every reference resolves inside the file.
+        """
         lines = [ln for ln in DASHBOARD.read_text(encoding="utf-8").splitlines() if ln.strip()]
         self.assertGreaterEqual(len(lines), 3)
-        types = []
-        for ln in lines:
-            obj = json.loads(ln)
-            self.assertIn("id", obj)
-            self.assertIn("type", obj)
-            types.append(obj["type"])
+        objs = [json.loads(ln) for ln in lines]
+        ids = {(o["type"], o["id"]) for o in objs}
+        self.assertEqual(len(ids), len(objs), "duplicate saved-object type/id")
+        types = [o["type"] for o in objs]
         self.assertIn("dashboard", types)
         self.assertIn("visualization", types)
         self.assertIn("index-pattern", types)
+        max_known = {"index-pattern": (7, 6, 0), "visualization": (7, 10, 0), "dashboard": (7, 9, 3)}
+        for o in objs:
+            with self.subTest(obj=o["id"]):
+                for typ, ver in (o.get("migrationVersion") or {}).items():
+                    parts = tuple(int(x) for x in ver.split("."))
+                    self.assertLessEqual(parts, max_known.get(typ, (7, 10, 2)), f"{typ} migrationVersion {ver} too new for OSD 2.x")
+                refs = o.get("references", [])
+                names = [r["name"] for r in refs]
+                self.assertEqual(len(names), len(set(names)), "duplicate reference names")
+                for r in refs:
+                    self.assertIn((r["type"], r["id"]), ids, f"dangling reference {r}")
+                attrs = o["attributes"]
+                if o["type"] == "visualization":
+                    ss = json.loads(attrs["kibanaSavedObjectMeta"]["searchSourceJSON"])
+                    self.assertIn(ss.get("indexRefName"), names)
+                    json.loads(attrs["visState"])
+                if o["type"] == "dashboard":
+                    for panel in json.loads(attrs["panelsJSON"]):
+                        self.assertIn(panel.get("panelRefName"), names)
         raw = DASHBOARD.read_text(encoding="utf-8").lower()
-        self.assertIn("untested", raw)
         self.assertIn("starter", raw)
-
+        self.assertIn("tested 2026-11-14", raw)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

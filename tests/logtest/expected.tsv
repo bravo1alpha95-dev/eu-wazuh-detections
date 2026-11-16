@@ -1,0 +1,20 @@
+# sample (under tests/samples/)	rule IDs that must appear	rule IDs that must NOT appear
+# Lines starting with # are comments. Use - for "none". Columns are tab-separated.
+# Each sample file is piped into wazuh-logtest as ONE session, so frequency
+# and correlation rules (100010/100011, 100016/100017) see the whole burst.
+# The runner sets the manager TZ so local time is inside 00:00-05:00, which
+# is required for 100012 and 100018 (<time> uses the manager clock).
+100002-nc.log	100002	-
+100002-ncat.log	100002	-
+100002-socat.log	100002	-
+100002-python-http.log	100002	-
+100002-busybox.log	100002	-
+100012-pam-success.log	100012	-
+5503-pam-failure.log	5503	100012
+100013-ssh-root-success.log	100013	-
+100018-ssh-user-success.log	100018	100013
+5710-ssh-invalid-user.log	5710	-
+5760-ssh-failed-password.log	5760	-
+session-100010-100011-pam.log	5503,100010,100011	-
+session-100016-100017-invalid-user.log	5710,100016,100017	-
+session-100016-100017-failed-password.log	5760,100016,100017	-

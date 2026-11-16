@@ -2,9 +2,9 @@
 
 This guide walks you through a small **Docker lab**: one Wazuh manager and one Wazuh agent, both version 4.14.10. You will load the EmpowerU custom rules and confirm that file-integrity rules **100020** and **100021** fire on a real change, not just a syntax check.
 
-You do **not** need a production Wazuh server for this. The lab is disposable. It is **not** a production install: it uses an open enrollment port with no password, and it does not include the Wazuh indexer or dashboard.
+You do **not** need a production Wazuh server for this. The lab is disposable. It is **not** a production install: it uses an open enrollment port with no password. The Wazuh indexer and dashboard are an **opt-in** overlay (step 6), so the basic lab stays small.
 
-These steps were run successfully on 2026-11-13 (America/New_York) against `wazuh/wazuh-manager:4.14.10` and `wazuh/wazuh-agent:4.14.10`. Both custom rules fired. The results are summarized at the end of this page.
+These steps were run successfully on 2026-11-13 (America/New_York) against `wazuh/wazuh-manager:4.14.10` and `wazuh/wazuh-agent:4.14.10`. Both custom rules fired. Steps 6 and 7 (dashboard and attack simulation) were run on 2026-11-14 against the same versions plus `wazuh/wazuh-indexer:4.14.10` and `wazuh/wazuh-dashboard:4.14.10`.
 
 If a command below starts with `docker` and your shell says "permission denied" on `/var/run/docker.sock`, put `sudo` in front (`sudo docker compose`, `sudo docker exec`, and so on). On Docker Desktop for Mac, `sudo` is usually not needed.
 
@@ -213,7 +213,58 @@ docker compose down        # stop and remove containers; keep volumes
 docker compose down -v     # also delete lab volumes (alerts and keys)
 ```
 
-`down -v` is a complete wipe of this lab's data. It does not remove the Docker images; you can delete those later with `docker image rm wazuh/wazuh-manager:4.14.10 wazuh/wazuh-agent:4.14.10` if you want the disk back.
+If you added the dashboard (step 6), include the overlay so its containers and volumes are removed too:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dashboard.yml --env-file dashboard/.generated/credentials.env down -v
+rm -rf dashboard/.generated    # generated certs and passwords
+```
+
+`down -v` is a complete wipe of this lab's data. It does not remove the Docker images; you can delete those later with `docker image rm wazuh/wazuh-manager:4.14.10 wazuh/wazuh-agent:4.14.10` (and `wazuh/wazuh-indexer:4.14.10 wazuh/wazuh-dashboard:4.14.10` if you used step 6) if you want the disk back.
+
+---
+
+## 6. Optional: add the indexer and dashboard
+
+This adds `wazuh/wazuh-indexer:4.14.10` and `wazuh/wazuh-dashboard:4.14.10` next to the manager and agent, ships alerts with the manager image's bundled Filebeat, and loads the EmpowerU starter dashboard. It is opt-in because the indexer needs memory.
+
+**Resources.** Plan for about **4 GB of free RAM** for all four containers (the indexer alone runs a 1 GB Java heap and uses about 2 GB) and about 5 GB of extra disk for the two images. `openssl` and `python3` must be installed on the Docker host.
+
+**Secrets.** The helper generates a lab-only certificate authority, TLS certificates, and **random passwords** for the indexer `admin` user, the dashboard's `kibanaserver` user, and the Wazuh API `wazuh-wui` user. They are written only to `lab/dashboard/.generated/` (git-ignored; directory mode 700, `credentials.env` mode 600). The helper never prints a password; open `credentials.env` yourself to log in. Nothing secret is in git or in the compose files.
+
+From `lab/`, with the base lab already running (steps 1–4):
+
+```bash
+./dashboard/dashboard.sh plan               # dry run: shows what it would do
+CONFIRM=yes ./dashboard/dashboard.sh up     # generate certs/passwords, start indexer + dashboard
+CONFIRM=yes ./dashboard/dashboard.sh import # load dashboards/eu-ec-detect-starter.ndjson
+./dashboard/dashboard.sh verify             # read-only: cluster health, EmpowerU alert counts, saved objects
+```
+
+`up` recreates the manager container (same volumes, so the agent's key and old alerts stay) with Filebeat pointed at the indexer and the generated Wazuh API password. The agent is not touched. When it finishes, open **https://127.0.0.1:5601** (self-signed certificate warning is expected), log in as `admin` with `EU_LAB_INDEXER_ADMIN_PASSWORD` from `lab/dashboard/.generated/credentials.env`, and open **Dashboards → EU EC Detect Starter**. Run the attack simulation (step 7) and press **Refresh** to see the alerts.
+
+Ports: the dashboard binds to `127.0.0.1:5601`. The indexer binds to `0.0.0.0:9200` by default, because on hosts where containers cannot talk to each other directly (Docker with `iptables` disabled, some Docker Desktop setups) the manager and dashboard reach it through the host, like the agent reaches the manager. It still requires TLS and the generated password. On a laptop behind a firewall that is fine; on anything reachable from a network you do not control, set `EU_LAB_INDEXER_BIND=<your docker bridge IP>` before `up`, and never publish 9200 or 5601 to the internet.
+
+Stop only the heavy containers with `CONFIRM=yes ./dashboard/dashboard.sh stop` (the manager keeps running and Filebeat retries until the indexer is back). Run `docker compose up -d` (without the overlay) to go back to the slim lab; that recreates the manager without the indexer settings.
+
+![EU EC Detect Starter dashboard showing live lab alerts](images/starter-dashboard.png)
+
+*The starter dashboard on Wazuh dashboard 4.14.10 (OpenSearch Dashboards 2.19.6), after an attack-simulation run on 2026-11-14 at about 11:30 AM EST. The off-hours panel is empty because the runs were in the daytime (see step 7).*
+
+What was verified on 2026-11-14: the indexer started green; Filebeat on the manager passed `filebeat test output` (TLS with full verification); alerts from the lab agent were indexed into `wazuh-alerts-4.x-2026.11.14`; the starter ndjson imported with 9 of 9 objects; and all seven panels rendered, six of them with live EmpowerU alerts. The first import attempt **failed** (`index-pattern ... belongs to a more recent version of OpenSearch Dashboards [8.0.0]`), so the export was fixed: migration versions now match OpenSearch Dashboards 2.x, references use the 2.x format, and the rule-breakdown pie had invalid chart parameters. Other Wazuh dashboard versions were not tested.
+
+---
+
+## 7. Optional: run the attack simulation
+
+`lab/simulate/` makes the lab agent produce the events each EmpowerU rule looks for, then reads `alerts.json` and reports which rule IDs fired. It is dry-run by default, acts only on the `wazuh-lab-agent` container, and sends nothing over the network: login, sudo and process events are synthetic log lines with documentation IPs, and FIM changes are harmless edits inside the container.
+
+```bash
+./simulate/run-all.sh               # dry run
+CONFIRM=yes ./simulate/run-all.sh   # run it and print a pass/fail table
+```
+
+Details, the expected rule for each scenario, and the 2026-11-14 results: [ATTACK-SIMULATION.md](ATTACK-SIMULATION.md).
 
 ---
 
@@ -273,5 +324,5 @@ For the FIM test, run the modify-and-watch steps on a **Wazuh agent** enrolled t
 
 To uninstall a Quickstart install: `sudo bash ./wazuh-install.sh -u` (see the same Quickstart page).
 
-This Docker lab does **not** start the dashboard, so the starter `dashboards/eu-ec-detect-starter.ndjson` export is still untested. Importing it requires a running Wazuh dashboard (OpenSearch Dashboards), which is part of the full single-node install above.
+To load the starter dashboard on that server, open the Wazuh dashboard, go to **Dashboards Management → Saved objects → Import**, and pick `dashboards/eu-ec-detect-starter.ndjson`. It was tested on Wazuh dashboard 4.14.10 in the Docker lab (step 6), not on a Quickstart install.
 

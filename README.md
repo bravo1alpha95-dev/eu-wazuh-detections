@@ -6,11 +6,13 @@ Wazuh custom rules, optional decoders, and a **starter** dashboard derived from 
 
 ## Tested on Wazuh 4.14.10
 
-Custom rules were loaded into the official `wazuh/wazuh-manager:4.14.10` container and exercised with `wazuh-logtest` and the synthetic samples in [tests/samples/](tests/samples/). Nine of eleven rule IDs fired as the leaf alert with the expected parents through logtest. File-integrity rules 100020 and 100021 **loaded** in logtest (the FIM plugin decoder is not invoked there) and **fired** on a live manager + agent on 2026-11-13: 100020 on a realtime mtime change to `/usr/bin/ls`, 100021 on a realtime content change to `/etc/ssh/sshd_config`. How to repeat that lab: [docs/SETUP-WAZUH-LAB.md](docs/SETUP-WAZUH-LAB.md). The starter dashboard is still untested. Details, parent-SID corrections (PAM 5501/5503 were swapped in the first draft), and leftover gaps are in [docs/LOGTEST.md](docs/LOGTEST.md).
+Custom rules were loaded into the official `wazuh/wazuh-manager:4.14.10` container and exercised with `wazuh-logtest` and the synthetic samples in [tests/samples/](tests/samples/). Nine of eleven rule IDs fired as the leaf alert with the expected parents through logtest. File-integrity rules 100020 and 100021 **loaded** in logtest (the FIM plugin decoder is not invoked there) and **fired** on a live manager + agent on 2026-11-13: 100020 on a realtime mtime change to `/usr/bin/ls`, 100021 on a realtime content change to `/etc/ssh/sshd_config`. How to repeat that lab: [docs/SETUP-WAZUH-LAB.md](docs/SETUP-WAZUH-LAB.md). On 2026-11-14 the starter dashboard was imported into Wazuh dashboard 4.14.10 and showed live alerts from the lab, and an attack-simulation run fired eight of the ten EmpowerU rule IDs on the live lab (the two off-hours rules only fire between 00:00 and 05:00 manager time). Details, parent-SID corrections (PAM 5501/5503 were swapped in the first draft), and leftover gaps are in [docs/LOGTEST.md](docs/LOGTEST.md).
 
 Parent rule IDs can still vary by version. Re-run `wazuh-logtest` on **your** manager, and tune thresholds, hours, and match lists to your baseline, before you rely on the alerts. The `<time>` window uses the manager's local clock.
 
-The dashboard export is a starter. It is untested and may need adjustments for your Wazuh and OpenSearch Dashboards versions. See [dashboards/README.md](dashboards/README.md).
+The dashboard export is a starter. It was tested on Wazuh dashboard 4.14.10 (OpenSearch Dashboards 2.19.6) only; other versions may need adjustments. See [dashboards/README.md](dashboards/README.md).
+
+![Starter dashboard with live lab alerts](docs/images/starter-dashboard.png)
 
 ## Contents
 
@@ -19,10 +21,11 @@ The dashboard export is a starter. It is untested and may need adjustments for y
 | [rules/eu_ec_detect_rules.xml](rules/eu_ec_detect_rules.xml) | Custom rules, IDs in the 100000+ range |
 | [docs/RULE-MAP.md](docs/RULE-MAP.md) | Each rule, what it detects, and MITRE ATT&CK IDs (only where clearly accurate) |
 | [decoders/eu_ec_detect_decoders.xml](decoders/eu_ec_detect_decoders.xml) | Optional classifier for collector JSON; the rules do not depend on it |
-| [dashboards/eu-ec-detect-starter.ndjson](dashboards/eu-ec-detect-starter.ndjson) | Starter saved-object export (untested) |
+| [dashboards/eu-ec-detect-starter.ndjson](dashboards/eu-ec-detect-starter.ndjson) | Starter saved-object export (tested on Wazuh dashboard 4.14.10) |
 | [examples/ossec-agent-snippets.conf](examples/ossec-agent-snippets.conf) | Optional agent FIM and manager-address snippets |
 | [docs/SETUP-WAZUH-LAB.md](docs/SETUP-WAZUH-LAB.md) | Step-by-step Docker lab (manager + agent) and official single-node install notes |
-| [lab/](lab/) | Compose file and `fim-test.sh` for that Docker lab |
+| [lab/](lab/) | Compose file and `fim-test.sh` for that Docker lab, plus the opt-in indexer + dashboard overlay (`lab/dashboard/`) |
+| [lab/simulate/](lab/simulate/) and [docs/ATTACK-SIMULATION.md](docs/ATTACK-SIMULATION.md) | Dry-run-by-default attack simulation that fires each rule on the lab agent and reports the rule IDs |
 | [sigma/](sigma/README.md) | Sigma ports of every rule (experimental), with a Wazuh ID → Sigma file mapping; converts to Splunk and Elasticsearch |
 
 Related: [eu-monitor-installer](https://github.com/bravo1alpha95-dev/eu-monitor-installer) can copy these rules onto a manager you operate (dry-run by default). Documentation site: [eu-security-site](https://github.com/bravo1alpha95-dev/eu-security-site).
@@ -64,7 +67,7 @@ python3 tests/test_xml_wellformed.py
 #   cat tests/samples/100013-ssh-root-success.log | /var/ossec/bin/wazuh-logtest
 ```
 
-GitHub Actions runs the well-formedness, uniqueness, and ID-range checks on every push and pull request. Those checks do not replace `wazuh-logtest`.
+GitHub Actions runs the well-formedness, uniqueness, and ID-range checks, `bash -n` and ShellCheck, and a **`wazuh-logtest` version matrix** on every push and pull request. The matrix runs the samples on `wazuh/wazuh-manager` 4.14.10, 4.14.0, 4.13.1, 4.12.0, 4.10.1 and 4.8.2, and all six pass 14/14. Results and two image quirks it found are in [docs/VERSION-MATRIX.md](docs/VERSION-MATRIX.md). Run one version yourself with `EU_WAZUH_VERSION=4.12.0 tests/logtest/run-logtest.sh` (needs Docker). FIM rules 100020 and 100021 cannot fire in logtest; they were verified on a live manager and agent.
 
 A second job lints the [Sigma ports](sigma/README.md) with `sigma check` and test-converts each one to Splunk, ES|QL, and Lucene (`bash sigma/validate.sh`).
 

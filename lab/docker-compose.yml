@@ -1,4 +1,4 @@
-# EmpowerU Wazuh lab — manager + agent only (no indexer or dashboard).
+# EmpowerU Wazuh lab — manager + agent (indexer + dashboard: see docker-compose.dashboard.yml).
 # Wazuh 4.14.10. Used to validate FIM rules 100020 and 100021.
 #
 # From this directory:
