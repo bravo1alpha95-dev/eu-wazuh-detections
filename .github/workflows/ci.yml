@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: bash -n and ShellCheck on every tracked shell script
         run: |
@@ -63,7 +63,7 @@ jobs:
         wazuh: ["4.14.10", "4.14.0", "4.13.1", "4.12.0", "4.10.1", "4.8.2"]
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Pull the manager image
         run: docker pull "wazuh/wazuh-manager:${{ matrix.wazuh }}"
