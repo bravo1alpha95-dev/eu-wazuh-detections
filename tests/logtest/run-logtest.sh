@@ -26,6 +26,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EU_WAZUH_VERSION="${EU_WAZUH_VERSION:-4.14.10}"
 EU_WAZUH_IMAGE="${EU_WAZUH_IMAGE:-wazuh/wazuh-manager}"
 EU_LOGTEST_TIMEOUT="${EU_LOGTEST_TIMEOUT:-420}"
+[[ "$EU_LOGTEST_TIMEOUT" =~ ^[0-9]{1,5}$ ]] || { echo "EU_LOGTEST_TIMEOUT must be a whole number of seconds." >&2; exit 2; }
 EU_LOGTEST_REPORT="${EU_LOGTEST_REPORT:-}"
 EU_LOGTEST_KEEP="${EU_LOGTEST_KEEP:-no}"
 EXPECTED="$ROOT/tests/logtest/expected.tsv"
