@@ -21,7 +21,10 @@ fi
 MANAGER=wazuh-lab-manager
 AGENT=wazuh-lab-agent
 
-if ! "${DC[@]}" exec "$MANAGER" /var/ossec/bin/agent_control -l | grep -q 'wazuh-lab-agent.*Active'; then
+# Capture first: `cmd | grep -q` under pipefail can fail spuriously when grep
+# exits early and the writer gets SIGPIPE.
+agents="$("${DC[@]}" exec "$MANAGER" /var/ossec/bin/agent_control -l)"
+if ! grep -q 'wazuh-lab-agent.*Active' <<<"$agents"; then
   echo "Agent is not Active yet. Wait until this lists wazuh-lab-agent as Active:" >&2
   echo "  ${DC[*]} exec $MANAGER /var/ossec/bin/agent_control -l" >&2
   exit 1
@@ -40,6 +43,29 @@ if ! "${DC[@]}" exec "$AGENT" test -f /etc/ssh/sshd_config; then
 fi
 
 TOKEN="EU-FIM-TEST-$(date +%Y%m%d%H%M%S)"
+# Only alerts written after this point count. Without this, alerts from an
+# earlier run make the test pass before this run has produced anything.
+ALERTS_START="$("${DC[@]}" exec "$MANAGER" stat -c %s /var/ossec/logs/alerts/alerts.json 2>/dev/null || echo 0)"
+[[ "$ALERTS_START" =~ ^[0-9]+$ ]] || ALERTS_START=0
+# Python prelude shared by the alert readers below: yields alerts appended
+# since ALERTS_START (from the start if the file was rotated), skipping a
+# partially written last line instead of crashing on it.
+READ_NEW_ALERTS='
+import json, os, sys
+def new_alerts(path="/var/ossec/logs/alerts/alerts.json"):
+    start = int(sys.argv[1])
+    if os.path.getsize(path) < start:
+        start = 0
+    with open(path, "rb") as f:
+        f.seek(start)
+        for raw in f:
+            if not raw.strip():
+                continue
+            try:
+                yield json.loads(raw)
+            except ValueError:
+                continue
+'
 echo "Test token: $TOKEN"
 echo "Modifying /usr/bin/ls (mtime only; contents are left alone) and appending a comment to /etc/ssh/sshd_config."
 
@@ -53,14 +79,9 @@ echo "Waiting for alerts..."
 found_020=0
 found_021=0
 for i in 1 2 3 4 5 6 7 8 9 10 12 15 18 20; do
-  result="$("${DC[@]}" exec "$MANAGER" python3 -c '
-import json
+  result="$("${DC[@]}" exec "$MANAGER" python3 -c "$READ_NEW_ALERTS"'
 ids=set(); paths={}
-with open("/var/ossec/logs/alerts/alerts.json") as f:
-    for line in f:
-        if not line.strip():
-            continue
-        a=json.loads(line)
+for a in new_alerts():
         rid=str(a.get("rule",{}).get("id"))
         path=(a.get("syscheck") or {}).get("path","")
         if rid in {"550","554","100020","100021"}:
@@ -68,7 +89,7 @@ with open("/var/ossec/logs/alerts/alerts.json") as f:
             paths.setdefault(rid, []).append(path)
 print("ids=" + ",".join(sorted(ids)))
 print("paths=" + json.dumps(paths))
-')"
+' "$ALERTS_START")"
   echo "  check $i: $result"
   case "$result" in
     *100020*) found_020=1 ;;
@@ -79,13 +100,8 @@ print("paths=" + json.dumps(paths))
   if [ "$found_020" -eq 1 ] && [ "$found_021" -eq 1 ]; then
     echo
     echo "Both rules fired. Leaf alerts (parent 550 is not the leaf once a child matches):"
-    "${DC[@]}" exec "$MANAGER" python3 -c '
-import json
-with open("/var/ossec/logs/alerts/alerts.json") as f:
-    for line in f:
-        if not line.strip():
-            continue
-        a=json.loads(line)
+    "${DC[@]}" exec "$MANAGER" python3 -c "$READ_NEW_ALERTS"'
+for a in new_alerts():
         rid=str(a.get("rule",{}).get("id"))
         if rid in {"100020","100021"}:
             s=a.get("syscheck") or {}
@@ -100,23 +116,18 @@ with open("/var/ossec/logs/alerts/alerts.json") as f:
             print("syscheck.changed_attributes:", s.get("changed_attributes"))
             print("full_log:")
             print(a.get("full_log"))
-'
+' "$ALERTS_START"
     exit 0
   fi
   sleep 4
 done
 
 echo "Did not see both 100020 and 100021. Dumping recent FIM-related alerts (including 550 and 554):" >&2
-"${DC[@]}" exec "$MANAGER" python3 -c '
-import json
-with open("/var/ossec/logs/alerts/alerts.json") as f:
-    for line in f:
-        if not line.strip():
-            continue
-        a=json.loads(line)
+"${DC[@]}" exec "$MANAGER" python3 -c "$READ_NEW_ALERTS"'
+for a in new_alerts():
         rid=str(a.get("rule",{}).get("id"))
         path=(a.get("syscheck") or {}).get("path","")
         if rid in {"550","553","554","100020","100021"} or "sshd" in path or path.endswith("/ls"):
             print(rid, a.get("rule",{}).get("description"), path, (a.get("syscheck") or {}).get("event"))
-'
+' "$ALERTS_START"
 exit 1

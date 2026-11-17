@@ -70,9 +70,12 @@ compose() {
 cred() { sed -n "s/^$1=//p" "$CREDS" | head -n1; }
 
 # curl with basic auth supplied on stdin via -K, so the password is never in argv.
+# Bounded so a hung indexer/dashboard cannot stall wait_for past its deadline
+# (wait_for only checks the clock between attempts).
 curl_auth() {
   local user="$1" pass="$2"; shift 2
-  printf 'user = "%s:%s"\n' "$user" "$pass" | curl -sS -K - --cacert "$CERTS/root-ca.pem" "$@"
+  printf 'user = "%s:%s"\n' "$user" "$pass" |
+    curl -sS --connect-timeout 5 --max-time 60 -K - --cacert "$CERTS/root-ca.pem" "$@"
 }
 
 gen_password() {
