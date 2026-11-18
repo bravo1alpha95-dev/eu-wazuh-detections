@@ -21,6 +21,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 umask 077
 
 EU_SIM_WAIT="${EU_SIM_WAIT:-90}"
+[[ "$EU_SIM_WAIT" =~ ^[0-9]{1,5}$ ]] || { echo "EU_SIM_WAIT must be a whole number of seconds." >&2; exit 2; }
 EU_SIM_REPORT_DIR="${EU_SIM_REPORT_DIR:-$HERE/results}"
 EU_SIM_ONLY="${EU_SIM_ONLY:-}"
 ALERTS=/var/ossec/logs/alerts/alerts.json

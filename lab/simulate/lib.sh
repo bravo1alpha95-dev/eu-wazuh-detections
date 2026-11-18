@@ -27,10 +27,15 @@ case "$EU_SIM_SRC_IP" in
   192.0.2.*|198.51.100.*|203.0.113.*) ;;
   *) echo "EU_SIM_SRC_IP must be in an RFC 5737 documentation range (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24)." >&2; exit 2 ;;
 esac
-case "$EU_SIM_LOG" in
-  /var/log/eu-sim/*) ;;
-  *) echo "EU_SIM_LOG must live under /var/log/eu-sim/ inside the agent container." >&2; exit 2 ;;
-esac
+# EU_SIM_LOG and EU_SIM_TAG are interpolated into shell commands and a sed
+# expression run as root inside the agent container, so accept a conservative
+# charset only. ".." is rejected so the path cannot climb out of /var/log/eu-sim/.
+if [[ ! "$EU_SIM_LOG" =~ ^/var/log/eu-sim/[A-Za-z0-9._/-]+$ || "$EU_SIM_LOG" == *..* ]]; then
+  echo "EU_SIM_LOG must live under /var/log/eu-sim/ inside the agent container (letters, digits, . _ - / only; no ..)." >&2; exit 2
+fi
+if [[ ! "$EU_SIM_TAG" =~ ^[A-Za-z0-9_-]{1,32}$ ]]; then
+  echo "EU_SIM_TAG must be 1-32 letters, digits, _ or - (it is used in shell and sed inside the container)." >&2; exit 2
+fi
 
 sim_docker_init() {
   if docker info >/dev/null 2>&1; then DC=(docker)
@@ -64,7 +69,8 @@ sim_syslog() {
   local line
   line="$(date '+%b %e %H:%M:%S') eu-sim-host $1: $2"
   if is_live; then
-    printf '%s\n' "$line" | agent_exec sh -c "mkdir -p \"\$(dirname '$EU_SIM_LOG')\" && cat >> '$EU_SIM_LOG'"
+    # shellcheck disable=SC2016  # $1 expands inside the container shell
+    printf '%s\n' "$line" | agent_exec sh -c 'mkdir -p "$(dirname "$1")" && cat >> "$1"' sh "$EU_SIM_LOG"
   else
     echo "  would append: $line"
   fi
@@ -73,7 +79,8 @@ sim_syslog() {
 # Same, but the raw line has no syslog header (Wazuh command-output format).
 sim_raw() {
   if is_live; then
-    printf '%s\n' "$1" | agent_exec sh -c "cat >> '$EU_SIM_LOG'"
+    # shellcheck disable=SC2016  # $1 expands inside the container shell
+    printf '%s\n' "$1" | agent_exec sh -c 'cat >> "$1"' sh "$EU_SIM_LOG"
   else
     echo "  would append: $1"
   fi
